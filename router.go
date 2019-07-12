@@ -1,4 +1,4 @@
-package main
+package gorouter
 
 import (
 	"net/http"
@@ -10,16 +10,16 @@ import (
 //Router is a router based off ServeMux
 type Router struct {
 	http.ServeMux
-	err http.HandlerFunc
+	Err http.HandlerFunc
 }
 
-//NewRouter is a returns a new router instance
-func NewRouter(errHandler http.HandlerFunc) *Router {
+//New is a returns a new router instance
+func New(errHandler http.HandlerFunc) *Router {
 	if errHandler == nil {
 		errHandler = http.NotFound
 	}
 	var rtr = new(Router)
-	rtr.err = errHandler
+	rtr.Err = errHandler
 	return rtr
 
 }
@@ -29,7 +29,7 @@ func (rtr *Router) Add(pattern string, handler http.Handler, specific bool) {
 	var routerRegex = regexp.MustCompile(`([:](?P<name>.+))+`)
 	var prefix = routerRegex.ReplaceAllString(pattern, "")
 	var pathName = routerRegex.FindStringSubmatch(pattern)
-	rtr.ServeMux.Handle(prefix, routeMiddleware(prefix, pattern, handler, pathName, rtr.err, specific))
+	rtr.ServeMux.Handle(prefix, routeMiddleware(prefix, pattern, handler, pathName, rtr.Err, specific))
 }
 
 func (rtr *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {

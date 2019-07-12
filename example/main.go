@@ -1,14 +1,16 @@
-package main
+package example
 
 import (
 	"html/template"
 	"net/http"
+
+	gorouter "github.com/SimplyCodin/GoRouter"
 )
 
 func main() {
 	var tmpl = template.Must(template.ParseFiles("base.tmpl.html"))
 
-	var rtr = NewRouter(func(w http.ResponseWriter, req *http.Request) {
+	var rtr = gorouter.New(func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(404)
 		tmpl.Execute(w, struct{ Content template.HTML }{template.HTML("<h1>404 - Page Not Found</h1><br>")})
 	})
@@ -21,7 +23,7 @@ func main() {
 		var html = req.URL.Query().Get(":html")
 		tmpl.Execute(wr, struct{ Content template.HTML }{template.HTML(html)})
 	}), true)
-	rtr.ServeMux.Handle("/", rtr.err)
+	rtr.ServeMux.Handle("/", rtr.Err)
 
 	http.ListenAndServe(":80", rtr)
 }
