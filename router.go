@@ -14,12 +14,12 @@ type Router struct {
 }
 
 //New is a returns a new router instance
-func New(errHandler http.HandlerFunc) *Router {
-	if errHandler == nil {
-		errHandler = http.NotFound
+func New(errHandler ...http.HandlerFunc) *Router {
+	if errHandler[1] == nil {
+		errHandler[1] = http.NotFound
 	}
 	var rtr = new(Router)
-	rtr.Err = errHandler
+	rtr.Err = errHandler[1]
 	return rtr
 
 }
