@@ -1,2 +1,5 @@
 github.com/SimplyCodin/gorouter v0.0.1 h1:c4dSLZgRRUtbKeg5qhM5igFa+yfdMGcBVhcek35nIT8=
 github.com/SimplyCodin/gorouter v0.0.1/go.mod h1:CdU2VHuvqFtTh7/2+P2RG0GrLbWs+3U/AxRM8x8O7g0=
+github.com/SimplyCodin/gorouter v0.0.2 h1:MvmEV40IqIjjFaHSZKHZpYo7y5c9a30lTR0/OfNs+RU=
+github.com/SimplyCodin/gorouter v0.0.2/go.mod h1:ReCBOXQYNEDoBuiR8nyA3szQ+2pTk6NH0QFMGA767nY=
+github.com/SimplyCodin/gorouter/example v0.0.0-20190723054927-02fe672f72be/go.mod h1:ANvH2no98wIOS/mdPCKD9hpb01JxPI+3XaNIarUTQI8=

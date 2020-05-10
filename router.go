@@ -1,6 +1,7 @@
 package gorouter
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -10,41 +11,64 @@ import (
 //Router is a router based off ServeMux
 type Router struct {
 	http.ServeMux
-	Err http.HandlerFunc
+	Err    http.HandlerFunc
+	Routes []string
 }
 
 //New is a returns a new router instance
-func New(errHandler ...http.HandlerFunc) *Router {
-	if errHandler[1] == nil {
-		errHandler[1] = http.NotFound
+func New(errHandlers ...http.HandlerFunc) (rtr *Router) {
+	rtr = new(Router)
+	if len(errHandlers) > 0 {
+		rtr.Err = errHandlers[0]
+	} else {
+		rtr.Err = http.NotFound
 	}
-	var rtr = new(Router)
-	rtr.Err = errHandler[1]
 	return rtr
-
-}
-
-//Add adds a new route to the router
-func (rtr *Router) Add(pattern string, handler http.Handler, specific bool) {
-	var routerRegex = regexp.MustCompile(`([:](?P<name>.+))+`)
-	var prefix = routerRegex.ReplaceAllString(pattern, "")
-	var pathName = routerRegex.FindStringSubmatch(pattern)
-	rtr.ServeMux.Handle(prefix, routeMiddleware(prefix, pattern, handler, pathName, rtr.Err, specific))
 }
 
 func (rtr *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	rtr.ServeMux.ServeHTTP(rw, req)
 }
 
-func routeMiddleware(prefix string, pattern string, handler http.Handler, pathName []string, errorHandler http.HandlerFunc, specific bool) http.HandlerFunc {
+//Add adds a new route to the router
+func (rtr *Router) Add(pattern string, handler http.Handler, serveIndex bool, index ...http.Handler) {
+	var routerRegex = regexp.MustCompile(`([:](?P<name>.+))+`)
+	var prefix string = "/"
+	var params []string = []string{"", "", ""}
+	var indexHandler http.Handler = nil
+
+	if routerRegex.MatchString(pattern) {
+		prefix = routerRegex.ReplaceAllString(pattern, "")
+		params = routerRegex.FindStringSubmatch(pattern)
+	}
+	fmt.Println(params)
+	if len(index) == 1 {
+		indexHandler = index[0]
+	}
+
+	rtr.ServeMux.HandleFunc(prefix, rtr.routeMiddleware(prefix, pattern, map[string]http.Handler{
+		"main":  handler,
+		"index": indexHandler,
+	}, params, rtr.Err, serveIndex))
+}
+
+func (rtr *Router) routeMiddleware(prefix string, pattern string, handlers map[string]http.Handler, params []string, errorHandler http.HandlerFunc, serveIndex bool) http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
-		if specific && (req.URL.Path == prefix) {
-			errorHandler(rw, req)
-			return
+		paramVal := strings.Replace(req.URL.Path, pattern, "", -1)
+		fmt.Printf("[gorouter/route] pattern: \"%s\", url: \"%s\", parameter: { name: \"%s\", value: \"%s\" }\n", pattern, req.URL.String(), params[2], paramVal)
+		if len(params) != 0 {
+			vals, _ := url.ParseQuery(req.URL.RawQuery)
+			vals.Add(params[0], strings.ReplaceAll(req.URL.Path, prefix, ""))
+			req.URL.RawQuery = vals.Encode()
 		}
-		vals, _ := url.ParseQuery(req.URL.RawQuery)
-		vals.Add(pathName[0], strings.ReplaceAll(req.URL.Path, prefix, ""))
-		req.URL.RawQuery = vals.Encode()
-		handler.ServeHTTP(rw, req)
+
+		switch {
+		case (paramVal == "") && serveIndex && (handlers["index"] != nil):
+			handlers["index"].ServeHTTP(rw, req)
+		case (paramVal != "") && (params[2] != ""):
+			handlers["main"].ServeHTTP(rw, req)
+		default:
+			errorHandler.ServeHTTP(rw, req)
+		}
 	}
 }
